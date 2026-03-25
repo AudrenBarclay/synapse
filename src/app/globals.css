@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Subtle, premium defaults */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #ffffff;
+  color: #0f172a; /* slate-900 */
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.18);
+}
+
