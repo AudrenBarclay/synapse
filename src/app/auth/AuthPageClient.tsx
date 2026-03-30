@@ -1,5 +1,6 @@
 "use client";
 
+import { supabase } from "../../lib/supabase";
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,10 +9,11 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ProfilePictureUpload } from "@/components/profile/ProfilePictureUpload";
-
+import { useRouter } from "next/navigation";
 type RoleChoice = "student" | "doctor";
 
-export default function AuthPage() {
+
+export default function AuthPageClient() {
   const params = useSearchParams();
   const defaultMode = params.get("mode") === "signup" ? "signup" : "login";
   const [mode, setMode] = React.useState<"login" | "signup">(defaultMode);
@@ -21,13 +23,47 @@ export default function AuthPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [touched, setTouched] = React.useState(false);
-
+  const router = useRouter();
   const emailError =
     touched && !email.includes("@") ? "Please enter a valid email address." : "";
   const passwordError =
     touched && password.length < 6
       ? "Password must be at least 6 characters."
       : "";
+
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setTouched(true);
+      
+        if (mode === "signup") {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+      
+          if (error) {
+            alert(error.message);
+            return;
+          }
+      
+          alert("Account created! Check your email if confirmation is enabled.");
+          console.log("signup data:", data);
+        } else {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+          
+            if (error) {
+              alert(error.message);
+              return;
+            }
+          
+            alert("Logged in successfully!");
+            console.log("login data:", data);
+            router.push(role === "doctor" ? "/doctor" : "/student");
+          }
+      };
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
@@ -125,13 +161,7 @@ export default function AuthPage() {
               />
             ) : null}
 
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setTouched(true);
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <Input
                 label="Email"
                 placeholder="name@university.edu"
