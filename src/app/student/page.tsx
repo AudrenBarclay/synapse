@@ -62,9 +62,6 @@ export default async function StudentDashboardPage() {
     .eq("role", "doctor")
     .limit(12);
 
-  const viewerLat = myProfile.lat ?? null;
-  const viewerLng = myProfile.lng ?? null;
-
   const suggestedDoctors = doctorRows
     ?.slice(0, 6)
     .map((r) =>
@@ -84,8 +81,8 @@ export default async function StudentDashboardPage() {
 
   const allOpportunities = mapOpportunityRows(
     (oppRows as OpportunityWithDoctorRow[] | null) ?? null,
-    viewerLat,
-    viewerLng
+    null,
+    null
   );
   const opportunitiesNear = allOpportunities
     .slice()
@@ -212,14 +209,7 @@ export default async function StudentDashboardPage() {
             </div>
 
             <div className="space-y-3">
-              <SectionHeader
-                title="Opportunities"
-                subtitle={
-                  viewerLat != null && viewerLng != null
-                    ? "Nearest listings by distance from your profile coordinates"
-                    : "Add coordinates in Edit profile to sort by distance"
-                }
-              />
+              <SectionHeader title="Opportunities" subtitle="Active listings on the network" />
               <div className="grid gap-3">
                 {noOpportunitiesOnNetwork ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">

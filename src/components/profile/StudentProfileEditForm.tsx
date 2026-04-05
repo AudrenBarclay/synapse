@@ -4,12 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { uploadProfileAvatar } from "@/lib/uploadAvatar";
-import {
-  coerceStringArray,
-  formatCoordForInput,
-  joinTagListFromUnknown,
-  parseTagList
-} from "@/lib/tags";
+import { coerceStringArray, joinTagListFromUnknown, parseTagList } from "@/lib/tags";
 import type { ProfileRow, StudentHoursRow } from "@/lib/profileMappers";
 import { STUDENT_YEAR_OPTIONS } from "@/lib/profileMappers";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -23,13 +18,6 @@ import { countWords, MAX_SHADOWING_GOALS_WORDS, truncateToWordLimit } from "@/li
 function numOrZero(v: string): number {
   const n = Number.parseInt(v, 10);
   return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
-function parseCoord(v: string): number | null {
-  const t = v.trim();
-  if (!t) return null;
-  const n = Number.parseFloat(t);
-  return Number.isFinite(n) ? n : null;
 }
 
 export function StudentProfileEditForm({
@@ -46,8 +34,6 @@ export function StudentProfileEditForm({
   const [headline, setHeadline] = React.useState(String(initialProfile.headline ?? ""));
   const [bio, setBio] = React.useState(String(initialProfile.bio ?? ""));
   const [locationText, setLocationText] = React.useState(String(initialProfile.location ?? ""));
-  const [latStr, setLatStr] = React.useState(formatCoordForInput(initialProfile.lat));
-  const [lngStr, setLngStr] = React.useState(formatCoordForInput(initialProfile.lng));
 
   const [shadowingHours, setShadowingHours] = React.useState(
     String(initialHours?.shadowing_hours ?? 0)
@@ -95,26 +81,8 @@ export function StudentProfileEditForm({
 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [geoHint, setGeoHint] = React.useState<string | null>(null);
 
   const displayName = fullName.trim();
-
-  const useDeviceLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoHint("Geolocation is not available in this browser.");
-      return;
-    }
-    setGeoHint("Getting location…");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatStr(String(pos.coords.latitude));
-        setLngStr(String(pos.coords.longitude));
-        setGeoHint("Coordinates filled from your device.");
-      },
-      () => setGeoHint("Could not read location. Allow access or enter coordinates manually."),
-      { enableHighAccuracy: true, timeout: 12_000 }
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,16 +107,11 @@ export function StudentProfileEditForm({
         avatarUrl = null;
       }
 
-      const lat = parseCoord(latStr);
-      const lng = parseCoord(lngStr);
-
       const profilePayload: Record<string, unknown> = {
         full_name: fullName.trim(),
         headline: headline.trim(),
         bio: bio.trim(),
         location: locationText.trim(),
-        lat,
-        lng,
         updated_at: new Date().toISOString()
       };
       if (avatarUrl !== undefined) {
@@ -237,10 +200,7 @@ export function StudentProfileEditForm({
 
       <Card className="shadow-card">
         <CardContent className="space-y-4 pt-6">
-          <SectionHeader
-            title="Location"
-            subtitle="Used for “opportunities near me” and distance on the map"
-          />
+          <SectionHeader title="Location" subtitle="City or region shown on your profile" />
           <Textarea
             label="Location"
             hint="e.g. City, state or campus — shown on your profile"
@@ -248,24 +208,6 @@ export function StudentProfileEditForm({
             value={locationText}
             onChange={(e) => setLocationText(e.target.value)}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Latitude"
-              hint="Decimal degrees, e.g. 33.749"
-              value={latStr}
-              onChange={(e) => setLatStr(e.target.value)}
-            />
-            <Input
-              label="Longitude"
-              hint="Decimal degrees, e.g. -84.388"
-              value={lngStr}
-              onChange={(e) => setLngStr(e.target.value)}
-            />
-          </div>
-          <Button type="button" variant="secondary" size="sm" onClick={useDeviceLocation}>
-            Fill lat/lng from device location
-          </Button>
-          {geoHint ? <p className="text-sm text-slate-600">{geoHint}</p> : null}
         </CardContent>
       </Card>
 

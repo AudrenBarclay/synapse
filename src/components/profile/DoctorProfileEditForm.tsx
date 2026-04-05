@@ -4,11 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { uploadProfileAvatar } from "@/lib/uploadAvatar";
-import {
-  formatCoordForInput,
-  joinTagListFromUnknown,
-  parseTagList
-} from "@/lib/tags";
+import { joinTagListFromUnknown, parseTagList } from "@/lib/tags";
 import type { ProfileRow } from "@/lib/profileMappers";
 import type { AvailabilityStatus } from "@/types/core";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -24,13 +20,6 @@ const AV_OPTIONS: { value: AvailabilityStatus; label: string }[] = [
   { value: "not_available", label: "Not available" }
 ];
 
-function parseCoord(v: string): number | null {
-  const t = v.trim();
-  if (!t) return null;
-  const n = Number.parseFloat(t);
-  return Number.isFinite(n) ? n : null;
-}
-
 export function DoctorProfileEditForm({
   initialProfile,
   userId
@@ -43,8 +32,6 @@ export function DoctorProfileEditForm({
   const [headline, setHeadline] = React.useState(String(initialProfile.headline ?? ""));
   const [bio, setBio] = React.useState(String(initialProfile.bio ?? ""));
   const [locationText, setLocationText] = React.useState(String(initialProfile.location ?? ""));
-  const [latStr, setLatStr] = React.useState(formatCoordForInput(initialProfile.lat));
-  const [lngStr, setLngStr] = React.useState(formatCoordForInput(initialProfile.lng));
 
   const [specialty, setSpecialty] = React.useState(String(initialProfile.specialty ?? ""));
   const [organization, setOrganization] = React.useState(
@@ -84,26 +71,8 @@ export function DoctorProfileEditForm({
 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [geoHint, setGeoHint] = React.useState<string | null>(null);
 
   const displayName = fullName.trim();
-
-  const useDeviceLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoHint("Geolocation is not available in this browser.");
-      return;
-    }
-    setGeoHint("Getting location…");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatStr(String(pos.coords.latitude));
-        setLngStr(String(pos.coords.longitude));
-        setGeoHint("Coordinates filled from your device.");
-      },
-      () => setGeoHint("Could not read location. Allow access or enter coordinates manually."),
-      { enableHighAccuracy: true, timeout: 12_000 }
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,16 +91,11 @@ export function DoctorProfileEditForm({
         avatarUrl = null;
       }
 
-      const lat = parseCoord(latStr);
-      const lng = parseCoord(lngStr);
-
       const profilePayload: Record<string, unknown> = {
         full_name: fullName.trim(),
         headline: headline.trim(),
         bio: bio.trim(),
         location: locationText.trim(),
-        lat,
-        lng,
         specialty: specialty.trim() || null,
         organization: organization.trim() || null,
         open_to_shadowing: openToShadowing,
@@ -246,10 +210,7 @@ export function DoctorProfileEditForm({
 
       <Card className="shadow-card">
         <CardContent className="space-y-4 pt-6">
-          <SectionHeader
-            title="Location"
-            subtitle="Helps students discover you on the map and by distance"
-          />
+          <SectionHeader title="Location" subtitle="Where you practice — shown on your profile" />
           <Textarea
             label="Location"
             hint="e.g. Atlanta, GA · Midtown or campus / hospital name"
@@ -257,24 +218,6 @@ export function DoctorProfileEditForm({
             value={locationText}
             onChange={(e) => setLocationText(e.target.value)}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Latitude"
-              hint="Decimal degrees"
-              value={latStr}
-              onChange={(e) => setLatStr(e.target.value)}
-            />
-            <Input
-              label="Longitude"
-              hint="Decimal degrees"
-              value={lngStr}
-              onChange={(e) => setLngStr(e.target.value)}
-            />
-          </div>
-          <Button type="button" variant="secondary" size="sm" onClick={useDeviceLocation}>
-            Fill lat/lng from device location
-          </Button>
-          {geoHint ? <p className="text-sm text-slate-600">{geoHint}</p> : null}
         </CardContent>
       </Card>
 

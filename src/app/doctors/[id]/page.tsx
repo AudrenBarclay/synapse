@@ -86,22 +86,10 @@ export default async function DoctorProfilePage({
     .eq("doctor_id", id)
     .order("created_at", { ascending: false });
 
-  let viewerLat: number | null = null;
-  let viewerLng: number | null = null;
-  if (user) {
-    const { data: viewer } = await supabase
-      .from("profiles")
-      .select("lat,lng")
-      .eq("id", user.id)
-      .maybeSingle();
-    viewerLat = viewer?.lat ?? null;
-    viewerLng = viewer?.lng ?? null;
-  }
-
   const doctorOpps: Opportunity[] = mapOpportunityRows(
     (listingRows as OpportunityWithDoctorRow[] | null) ?? null,
-    viewerLat,
-    viewerLng
+    null,
+    null
   );
 
   return (
