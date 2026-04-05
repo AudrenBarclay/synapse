@@ -12,6 +12,76 @@ import { ProfilePictureUpload } from "@/components/profile/ProfilePictureUpload"
 
 type RoleChoice = "student" | "doctor";
 
+/**
+ * Ensures a `profiles` row exists for the authenticated user.
+ * Uses DB role when a row already exists; otherwise inserts using `selectedRole` (signup / login UI).
+ */
+async function ensureProfileForUser(
+  userId: string,
+  email: string | null | undefined,
+  selectedRole: RoleChoice
+): Promise<{ role: RoleChoice; error: string | null }> {
+  const { data: existing, error: fetchErr } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (fetchErr) {
+    return { role: selectedRole, error: fetchErr.message };
+  }
+
+  if (existing?.role === "student" || existing?.role === "doctor") {
+    const r = existing.role as RoleChoice;
+    if (r === "student") {
+      await supabase.from("student_hours").upsert(
+        { user_id: userId },
+        { onConflict: "user_id", ignoreDuplicates: true }
+      );
+    }
+    return { role: r, error: null };
+  }
+
+  const { error: insErr } = await supabase.from("profiles").insert({
+    id: userId,
+    role: selectedRole,
+    email: email ?? null,
+    full_name: "",
+    open_to_shadowing: selectedRole === "doctor" ? false : null
+  });
+
+  if (insErr) {
+    const { data: raced } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (raced?.role === "student" || raced?.role === "doctor") {
+      const r = raced.role as RoleChoice;
+      if (r === "student") {
+        await supabase.from("student_hours").upsert(
+          { user_id: userId },
+          { onConflict: "user_id", ignoreDuplicates: true }
+        );
+      }
+      return { role: r, error: null };
+    }
+    return { role: selectedRole, error: insErr.message };
+  }
+
+  if (selectedRole === "student") {
+    const { error: hoursErr } = await supabase.from("student_hours").upsert(
+      { user_id: userId },
+      { onConflict: "user_id", ignoreDuplicates: true }
+    );
+    if (hoursErr) {
+      return { role: selectedRole, error: hoursErr.message };
+    }
+  }
+
+  return { role: selectedRole, error: null };
+}
+
 function safeInternalPath(next: string | null): string | null {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("://")) {
     return null;
@@ -80,37 +150,21 @@ export default function AuthPageClient() {
           return;
         }
 
-        const { error: profileError } = await supabase.from("profiles").upsert(
-          {
-            id: user.id,
-            role,
-            email,
-            full_name: "",
-            open_to_shadowing: role === "doctor" ? false : null
-          },
-          { onConflict: "id" }
+        const { role: resolvedRole, error: profileError } = await ensureProfileForUser(
+          user.id,
+          user.email ?? email,
+          role
         );
 
         if (profileError) {
-          setFormError(profileError.message);
+          setFormError(profileError);
           return;
-        }
-
-        if (role === "student") {
-          const { error: hoursErr } = await supabase.from("student_hours").upsert(
-            { user_id: user.id },
-            { onConflict: "user_id", ignoreDuplicates: true }
-          );
-          if (hoursErr) {
-            setFormError(hoursErr.message);
-            return;
-          }
         }
 
         await uploadAvatarIfNeeded(user.id, avatarFile);
 
         router.push(
-          nextAfterAuth ?? (role === "doctor" ? "/doctor" : "/student")
+          nextAfterAuth ?? (resolvedRole === "doctor" ? "/doctor" : "/student")
         );
         router.refresh();
         return;
@@ -132,19 +186,19 @@ export default function AuthPageClient() {
         return;
       }
 
-      const { data: prof, error: profErr } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", uid)
-        .single();
+      const { role: resolvedRole, error: profileError } = await ensureProfileForUser(
+        uid,
+        data.user?.email ?? email,
+        role
+      );
 
-      if (profErr || !prof) {
-        setFormError("Profile not found. Complete sign up first.");
+      if (profileError) {
+        setFormError(profileError);
         return;
       }
 
       router.push(
-        nextAfterAuth ?? (prof.role === "doctor" ? "/doctor" : "/student")
+        nextAfterAuth ?? (resolvedRole === "doctor" ? "/doctor" : "/student")
       );
       router.refresh();
     } finally {
