@@ -17,9 +17,9 @@ cd /Users/audrenbarclay/Documents/premed-networking
 npm install
 ```
 
-2. Create a **Supabase** project. In the SQL editor, run `supabase/schema.sql`, then apply migrations in order: `002_matching_schedule_prereqs.sql`, `003_opportunities.sql`, `004_profiles_location.sql`, `005_profiles_optional_columns.sql`, `006_availability_schedule_drop_legacy_week_tables.sql`. Doctor weekly AM/PM data lives in `profiles.availability_schedule` (jsonb). The app normalizes optional/alias profile columns in `normalizeProfileRowForForm`.
+2. Create a **Supabase** project. In the SQL editor, run **`supabase/complete_setup.sql`** once. It creates all tables/columns used by the app, enables RLS, adds policies, registers Storage buckets, and drops legacy `doctor_*` week tables. (Older piecemeal migrations under `supabase/migrations/` are optional reference only if you already applied them.)
 
-3. Create Storage buckets **`avatars`** and **`student-forms`** with policies so authenticated users can upload under their own user id prefix.
+3. If Storage policies fail to apply (permissions), create buckets **`avatars`** and **`student-forms`** in the Dashboard first, then re-run the Storage section of `complete_setup.sql`.
 
 4. Copy environment variables:
 

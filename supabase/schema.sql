@@ -1,5 +1,5 @@
--- Premed networking — Supabase schema outline (messaging, booking, profiles).
--- Run in the Supabase SQL editor or via migrations. Adjust RLS to your security model.
+-- Premed networking — table outline only (no RLS). For a full production-ready database
+-- matching the app (RLS + Storage), run `complete_setup.sql` in the SQL Editor instead.
 
 -- ---------------------------------------------------------------------------
 -- Storage: create a public bucket named `avatars` for profile photos.
