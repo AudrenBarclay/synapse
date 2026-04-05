@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -6,19 +8,82 @@ import { StudentProfileCard } from "@/components/cards/ProfileCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { conversations, doctors, messages, students } from "@/data";
+import {
+  rowToDoctorProfile,
+  rowsToStudentProfile,
+  type ProfileRow,
+  type StudentHoursRow
+} from "@/lib/profileMappers";
+import type { StudentProfile } from "@/types";
 import { formatAvailability } from "@/utils/format";
+import { PendingMatchesSection } from "@/components/matching/PendingMatchesSection";
 
-export default function DoctorDashboardPage() {
-  const me = doctors[0];
+export default async function DoctorDashboardPage() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth");
+  }
+
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (!profileRow) {
+    redirect("/auth");
+  }
+  if (profileRow.role === "student") {
+    redirect("/student");
+  }
+  if (profileRow.role !== "doctor") {
+    redirect("/auth");
+  }
+
+  const { count: slotCount } = await supabase
+    .from("meeting_slots")
+    .select("*", { count: "exact", head: true })
+    .eq("doctor_id", user.id);
+
+  const { count: studentCount } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "student");
+
+  const { count: myListingCount } = await supabase
+    .from("opportunities")
+    .select("*", { count: "exact", head: true })
+    .eq("doctor_id", user.id)
+    .eq("is_active", true);
+
+  const me = rowToDoctorProfile(profileRow as ProfileRow, []);
   const av = formatAvailability(me.availabilityStatus);
-  const interestedStudents = students.slice(0, 2);
-  const inboxPreview = conversations.slice(0, 2).map((c) => ({
-    convo: c,
-    last: messages
-      .filter((m) => m.conversationId === c.id)
-      .slice(-1)[0]
-  }));
+  const doctorDisplayName = profileRow.full_name?.trim() ?? "";
+
+  const { data: studentRows } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "student")
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const studentsResolved: StudentProfile[] = [];
+  for (const row of studentRows ?? []) {
+    const { data: h } = await supabase
+      .from("student_hours")
+      .select("*")
+      .eq("user_id", row.id)
+      .maybeSingle();
+    studentsResolved.push(
+      rowsToStudentProfile(row as ProfileRow, h as StudentHoursRow | null)
+    );
+  }
+
+  const preview = studentsResolved.slice(0, 2);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
@@ -28,24 +93,41 @@ export default function DoctorDashboardPage() {
           currentPath="/doctor"
           items={[
             { label: "Dashboard", href: "/doctor" },
-            { label: "Messages", href: "/messages", badge: "1" },
+            { label: "Edit profile", href: "/doctor/edit" },
+            { label: "My listings", href: "/doctor/opportunities" },
+            { label: "Messages", href: "/messages" },
             { label: "My Profile", href: `/doctors/${me.id}` },
             { label: "Opportunities Near Me", href: "/opportunities" }
           ]}
         />
 
         <div className="min-w-0 flex-1 space-y-6">
+          <PendingMatchesSection doctorId={user.id} />
+
           <div className="rounded-3xl border border-slate-200/70 bg-white p-6 shadow-card">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div className="space-y-1">
-                <div className="text-sm font-semibold text-slate-900">
-                  Welcome, {me.name}
-                </div>
-                <div className="text-sm text-slate-600">
-                  {me.specialty} · {me.organization}
-                </div>
+                {!doctorDisplayName ? (
+                  <>
+                    <div className="text-sm font-semibold text-slate-900">Complete your profile</div>
+                    <p className="text-sm text-slate-600">
+                      Add your name under Edit profile. Specialty and organization also come from your
+                      saved profile.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-semibold text-slate-900">
+                      Welcome, {doctorDisplayName}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {[me.specialty, me.organization].filter(Boolean).join(" · ") ||
+                        "Add specialty and organization in Edit profile."}
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={av.tone}>{av.label}</Badge>
                 {me.availableForShadowing ? (
                   <Badge variant="mint">Open to students</Badge>
@@ -54,19 +136,31 @@ export default function DoctorDashboardPage() {
                 )}
               </div>
             </div>
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+              <Link href="/doctor/edit">
+                <Button>Edit profile</Button>
+              </Link>
+              <Link href="/doctor/opportunities">
+                <Button variant="secondary">Manage listings</Button>
+              </Link>
+              <Link href="/messages">
+                <Button variant="secondary">Open messages</Button>
+              </Link>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Students interested" value={`${interestedStudents.length}`} />
-            <StatCard label="Upcoming meetings" value="2" tone="mint" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Students on the network" value={`${studentCount ?? 0}`} />
+            <StatCard label="Active listings" value={`${myListingCount ?? 0}`} tone="brand" />
+            <StatCard label="Meeting slots" value={`${slotCount ?? 0}`} tone="mint" />
             <StatCard label="Availability" value={av.label} tone={av.tone} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-3">
               <SectionHeader
-                title="Interested students"
-                subtitle="Recent outreach requests"
+                title="Student profiles"
+                subtitle="Recently joined students on the network"
                 right={
                   <Link href="/messages">
                     <Button variant="ghost" size="sm">
@@ -76,62 +170,55 @@ export default function DoctorDashboardPage() {
                 }
               />
               <div className="grid gap-3">
-                {interestedStudents.map((s) => (
-                  <StudentProfileCard key={s.id} student={s} />
-                ))}
+                {preview.length ? (
+                  preview.map((s) => <StudentProfileCard key={s.id} student={s} />)
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    No student profiles yet.
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-3">
               <SectionHeader
-                title="Incoming messages"
-                subtitle="Quick preview of your latest conversations"
+                title="Messages"
+                subtitle="Open your inbox to reply to students"
               />
-              <div className="grid gap-3">
-                {inboxPreview.map(({ convo, last }) => (
-                  <Card key={convo.id} className="transition hover:shadow-card">
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold text-slate-900">
-                          Conversation {convo.id.toUpperCase()}
-                        </div>
-                        {convo.unreadCount ? (
-                          <Badge variant="brand">{convo.unreadCount} unread</Badge>
-                        ) : (
-                          <Badge variant="slate">Up to date</Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        {last?.body ?? convo.lastMessagePreview}
-                      </div>
-                      <div className="flex justify-end">
-                        <Link href="/messages">
-                          <Button size="sm" variant="secondary">
-                            Reply
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <Card className="transition hover:shadow-card">
+                <CardContent className="space-y-2">
+                  <div className="text-sm text-slate-600">
+                    Open your inbox to see conversations with students you have matched with.
+                  </div>
+                  <div className="flex justify-end">
+                    <Link href="/messages">
+                      <Button size="sm" variant="secondary">
+                        Open messages
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200/70 bg-white p-6 shadow-soft">
             <SectionHeader
               title="Manage shadowing availability"
-              subtitle="This is a mock control panel for the demo."
-              right={<Badge variant="brand">Local state</Badge>}
+              subtitle="Update your doctor profile to reflect openness and scheduling."
+              right={<Badge variant="brand">Profile</Badge>}
             />
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-slate-600">
-                Update your status to help students understand response expectations.
+                Edit availability and shadowing preferences on your public profile page.
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="secondary">Set available</Button>
-                <Button variant="secondary">Set limited</Button>
-                <Button variant="secondary">Pause shadowing</Button>
+                <Link href="/doctor/edit">
+                  <Button variant="secondary">Open full editor</Button>
+                </Link>
+                <Link href={`/doctors/${me.id}`}>
+                  <Button variant="ghost">View public profile</Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -140,4 +227,3 @@ export default function DoctorDashboardPage() {
     </main>
   );
 }
-

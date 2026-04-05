@@ -25,7 +25,7 @@ export function BookingWidget({
         <SectionHeader
           title="Book a quick intro"
           subtitle="Select a time to confirm a short (20 min) intro meeting."
-          right={<Badge variant="brand">Mock scheduling</Badge>}
+          right={<Badge variant="brand">Intro call</Badge>}
         />
 
         {availableSlots.length === 0 ? (

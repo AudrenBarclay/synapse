@@ -5,17 +5,20 @@ import { Button } from "@/components/ui/Button";
 export function ProfilePictureUpload({
   name,
   value,
-  onChange
+  onChange,
+  onFileSelect
 }: {
   name: string;
   value: string | null;
   onChange: (next: string | null) => void;
+  /** When set, receives the raw file for upload (e.g. Supabase Storage). */
+  onFileSelect?: (file: File | null) => void;
 }) {
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-soft">
-      <Avatar name={name || "User"} src={value} size="lg" />
+      <Avatar name={name} src={value} size="lg" />
       <div className="flex-1 space-y-1">
         <div className="text-sm font-semibold text-slate-900">Profile photo</div>
         <div className="text-sm text-slate-600">
@@ -30,6 +33,7 @@ export function ProfilePictureUpload({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
+              onFileSelect?.(file);
               const url = URL.createObjectURL(file);
               onChange(url);
             }}
@@ -47,7 +51,10 @@ export function ProfilePictureUpload({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => onChange(null)}
+              onClick={() => {
+                onFileSelect?.(null);
+                onChange(null);
+              }}
             >
               Remove
             </Button>

@@ -14,9 +14,17 @@ export function DoctorProfileCard({ doctor }: { doctor: DoctorProfile }) {
         <div className="flex items-start gap-3">
           <Avatar name={doctor.name} src={doctor.profilePicture} />
           <div className="space-y-1">
-            <div className="text-sm font-semibold text-slate-900">{doctor.name}</div>
+            <div className="text-sm font-semibold text-slate-900">
+              {doctor.name.trim() ? (
+                doctor.name
+              ) : (
+                <span className="text-slate-400">Name not set</span>
+              )}
+            </div>
             <div className="text-sm text-slate-600">
-              {doctor.specialty} · {doctor.organization}
+              {[doctor.specialty, doctor.organization].filter(Boolean).join(" · ") || (
+                <span className="text-slate-400">Add specialty &amp; organization in Edit profile</span>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <Badge variant={av.tone}>{av.label}</Badge>
@@ -46,12 +54,18 @@ export function StudentProfileCard({ student }: { student: StudentProfile }) {
           <Avatar name={student.name} src={student.profilePicture} />
           <div className="space-y-1">
             <div className="text-sm font-semibold text-slate-900">
-              {student.name}
+              {student.name.trim() ? (
+                student.name
+              ) : (
+                <span className="text-slate-400">Name not set</span>
+              )}
             </div>
-            <div className="text-sm text-slate-600">{student.headline}</div>
+            <div className="text-sm text-slate-600">
+              {student.headline.trim() ? student.headline : ""}
+            </div>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Badge variant="brand">{student.year}</Badge>
-              <Badge variant="slate">{student.major}</Badge>
+              {student.year ? <Badge variant="brand">{student.year}</Badge> : null}
+              {student.major.trim() ? <Badge variant="slate">{student.major}</Badge> : null}
             </div>
           </div>
         </div>

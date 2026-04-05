@@ -13,6 +13,7 @@ export type Location = {
   city: string;
   state: string;
   neighborhood?: string;
-  coordinates: Coordinates;
+  /** Set when the user has saved latitude/longitude on their profile. */
+  coordinates: Coordinates | null;
 };
 

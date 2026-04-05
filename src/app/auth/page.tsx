@@ -3,7 +3,7 @@ import AuthPageClient from "./AuthPageClient";
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={null}>
       <AuthPageClient />
     </Suspense>
   );

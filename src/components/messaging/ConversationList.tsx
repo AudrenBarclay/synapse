@@ -42,7 +42,11 @@ export function ConversationList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="truncate text-sm font-semibold text-slate-900">
-                      {other.name}
+                      {other.name.trim() ? (
+                        other.name
+                      ) : (
+                        <span className="text-slate-400">Name not set</span>
+                      )}
                     </div>
                     {c.unreadCount > 0 ? (
                       <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-xs font-semibold text-white">

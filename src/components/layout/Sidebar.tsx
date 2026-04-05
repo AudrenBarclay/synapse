@@ -51,8 +51,8 @@ export function Sidebar({
         <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-soft">
           <div className="text-sm font-semibold text-slate-900">Tips</div>
           <p className="mt-1 text-sm text-slate-600">
-            Keep outreach messages concise and respectful. Include 2–3 learning
-            goals and availability windows.
+            Navigation only—your dashboards load live data from Supabase
+            their profiles. Keep messages concise; include learning goals and availability.
           </p>
         </div>
       </div>

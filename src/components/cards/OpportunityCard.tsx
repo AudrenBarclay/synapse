@@ -19,25 +19,41 @@ export function OpportunityCard({
           <div className="space-y-2">
             <div className="space-y-0.5">
               <div className="text-sm font-semibold text-slate-900">
-                {opportunity.specialty} shadowing
+                {opportunity.title ||
+                  (opportunity.specialty
+                    ? `${opportunity.specialty} shadowing`
+                    : "Shadowing opportunity")}
               </div>
               <div className="text-sm text-slate-600">
-                {opportunity.doctorName} · {opportunity.locationLabel}
+                {[
+                  opportunity.doctorName.trim() || null,
+                  opportunity.locationLabel.trim() && opportunity.locationLabel !== "—"
+                    ? opportunity.locationLabel
+                    : null
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "—"}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="slate">{formatMiles(opportunity.distanceMiles)}</Badge>
+              <Badge variant="slate">
+                {opportunity.distanceMiles != null
+                  ? formatMiles(opportunity.distanceMiles)
+                  : "Distance —"}
+              </Badge>
               {opportunity.available ? (
                 <Badge variant="mint">Available</Badge>
               ) : (
                 <Badge variant="slate">Waitlist</Badge>
               )}
             </div>
-            <p className="text-sm text-slate-600">{opportunity.description}</p>
+            {opportunity.description.trim() ? (
+              <p className="text-sm text-slate-600">{opportunity.description}</p>
+            ) : null}
           </div>
           <Link href={`/doctors/${opportunity.doctorId}`} className="shrink-0">
             <Button size="sm" variant="secondary">
-              Doctor
+              Profile
             </Button>
           </Link>
         </div>

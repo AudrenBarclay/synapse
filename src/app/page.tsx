@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function Feature({
   title,
@@ -20,7 +21,21 @@ function Feature({
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createServerSupabaseClient();
+  const { count: doctorCount } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "doctor");
+
+  const { count: listingCount } = await supabase
+    .from("opportunities")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
+
+  const doctorsOnNetwork = doctorCount ?? 0;
+  const activeListings = listingCount ?? 0;
+
   return (
     <main>
       <section className="relative overflow-hidden">
@@ -36,9 +51,9 @@ export default function HomePage() {
               Meet physicians. Find shadowing. Build a professional profile.
             </h1>
             <p className="text-pretty text-base leading-relaxed text-slate-600 md:text-lg">
-              Synapse helps pre‑med students discover local shadowing
-              opportunities and connect with doctors through a clean, trusted
-              networking experience.
+              Synapse helps pre‑med students discover local shadowing opportunities and connect
+              with doctors through a clean, trusted networking experience — similar to LinkedIn,
+              built for mentorship and shadowing.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link href="/auth?mode=signup" className="w-full sm:w-auto">
@@ -55,15 +70,15 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-mint-500" />
-                Trusted, minimal UI
+                Student & doctor profiles
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-brand-600" />
-                Nearby discovery
+                Opportunities near me (map + distance)
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-slate-400" />
-                Clear scheduling
+                Messages & intro booking
               </span>
             </div>
           </div>
@@ -72,65 +87,37 @@ export default function HomePage() {
             <div className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-card">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="text-sm font-semibold text-slate-900">
-                    Suggested matches
-                  </div>
+                  <div className="text-sm font-semibold text-slate-900">Network snapshot</div>
                   <div className="text-sm text-slate-600">
-                    Based on your location & interests
+                    Live counts from your database (doctors and active listings)
                   </div>
                 </div>
-                <Badge variant="brand">Demo</Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="brand">{doctorsOnNetwork} doctors</Badge>
+                  <Badge variant="mint">{activeListings} active listings</Badge>
+                </div>
               </div>
 
-              <div className="mt-5 grid gap-3">
-                {[
-                  {
-                    name: "Dr. Maya Patel",
-                    meta: "Cardiology · Emory Midtown",
-                    note: "Open to shadowing"
-                  },
-                  {
-                    name: "Dr. James Chen",
-                    meta: "Emergency Medicine · Grady",
-                    note: "1 slot this week"
-                  },
-                  {
-                    name: "Dr. Sofia Ramirez",
-                    meta: "Pediatrics · Children’s Healthcare",
-                    note: "Responds quickly"
-                  }
-                ].map((d) => (
-                  <div
-                    key={d.name}
-                    className="flex items-start justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-soft transition hover:shadow-card"
-                  >
-                    <div className="space-y-1">
-                      <div className="text-sm font-semibold text-slate-900">
-                        {d.name}
-                      </div>
-                      <div className="text-sm text-slate-600">{d.meta}</div>
-                      <div className="text-xs text-slate-500">{d.note}</div>
-                    </div>
-                    <Link href="/doctors/d-101">
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <Link href="/student">
-                  <Button variant="secondary" className="w-full">
-                    Student dashboard
-                  </Button>
-                </Link>
-                <Link href="/doctor">
-                  <Button variant="secondary" className="w-full">
-                    Doctor dashboard
-                  </Button>
-                </Link>
+              <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <div className="text-sm font-medium text-slate-800">
+                  {doctorsOnNetwork === 0 && activeListings === 0
+                    ? "The network starts empty — only real sign-ups appear here."
+                    : `${doctorsOnNetwork} doctor profile${doctorsOnNetwork === 1 ? "" : "s"}, ${activeListings} active shadowing listing${activeListings === 1 ? "" : "s"}`}
+                </div>
+                <p className="mt-2 text-sm text-slate-600">
+                  These numbers are queried from your Supabase project. Profiles and listings stay
+                  blank until someone signs in and adds them.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <Link href="/auth?mode=signup">
+                    <Button size="sm">Create account</Button>
+                  </Link>
+                  <Link href="/opportunities">
+                    <Button variant="secondary" size="sm">
+                      Browse opportunities
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -144,19 +131,18 @@ export default function HomePage() {
         <div className="grid gap-8 md:grid-cols-3">
           <Feature
             title="Find shadowing opportunities"
-            description="Browse nearby shadowing options with availability, specialties, and distance—designed for fast decisions."
+            description="Browse nearby options with specialties and distance — use your profile location or device location."
           />
           <Feature
             title="Connect with doctors"
-            description="Message physicians in a professional interface built for clear, respectful outreach."
+            description="Message physicians from profiles in a professional inbox backed by your database."
           />
           <Feature
             title="Build a pre‑med profile"
-            description="Showcase hours, interests, research, and goals with clean profile sections that read like a modern networking app."
+            description="Showcase hours, major, year, interests, and research — doctors show availability and shadowing preferences."
           />
         </div>
       </section>
     </main>
   );
 }
-

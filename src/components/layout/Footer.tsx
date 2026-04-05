@@ -8,7 +8,7 @@ export function Footer() {
           <div className="text-sm font-semibold text-slate-900">Synapse</div>
           <p className="text-sm text-slate-600">
             A professional network for pre-med students and physicians—built for
-            safe, structured shadowing discovery.
+            structured shadowing discovery and mutual matches.
           </p>
         </div>
         <div className="space-y-2">
@@ -29,34 +29,34 @@ export function Footer() {
         </div>
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Community
+            Dashboards
           </div>
           <div className="grid gap-1 text-sm">
             <Link className="text-slate-700 hover:text-slate-900" href="/student">
-              Student dashboard
+              Student home
             </Link>
             <Link className="text-slate-700 hover:text-slate-900" href="/doctor">
-              Doctor dashboard
+              Doctor home
             </Link>
           </div>
         </div>
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Trust
+            Privacy
           </div>
           <p className="text-sm text-slate-600">
-            Demo UI only. No PHI. No backend. All content is mock data for
-            product prototyping.
+            Accounts and profiles are stored in your Supabase project. Never post
+            patient-identifiable or other protected information. Follow your school
+            and site policies.
           </p>
         </div>
       </div>
       <div className="border-t border-slate-200/70">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 text-xs text-slate-500">
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} Synapse</span>
-          <span>Designed for a healthcare-tech startup aesthetic.</span>
+          <span>Your profile starts blank—sign in and use Edit profile to add your own information.</span>
         </div>
       </div>
     </footer>
   );
 }
-

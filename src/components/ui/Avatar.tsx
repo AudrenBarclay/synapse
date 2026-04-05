@@ -20,12 +20,17 @@ export function Avatar({
           ? "h-16 w-16 text-base"
           : "h-10 w-10 text-sm";
 
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
+  const trimmed = name.trim();
+  const initials = trimmed
+    ? trimmed
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase())
+        .join("")
+    : "";
+
+  const label = trimmed || "Profile";
 
   return (
     <div
@@ -34,14 +39,14 @@ export function Avatar({
         sizeClass,
         className
       )}
-      aria-label={name}
-      title={name}
+      aria-label={label}
+      title={label}
     >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={name} className="h-full w-full object-cover" />
+        <img src={src} alt={label} className="h-full w-full object-cover" />
       ) : (
-        <span className="font-semibold">{initials}</span>
+        <span className="font-semibold">{initials || "—"}</span>
       )}
     </div>
   );

@@ -10,6 +10,7 @@ export type MeetingSlot = {
 export type DoctorProfile = {
   id: ID;
   role: "doctor";
+  /** Empty until the user sets full_name in the database. */
   name: string;
   profilePicture: string | null;
   specialty: string;
@@ -22,5 +23,8 @@ export type DoctorProfile = {
   meetingSlots: MeetingSlot[];
   interests: string[];
   areasOfFocus: string[];
+  dressCodePreferences: string;
+  meetingPointPreferences: string;
+  preShadowingReadings: string;
 };
 

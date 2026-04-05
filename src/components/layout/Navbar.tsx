@@ -26,13 +26,13 @@ export function Navbar() {
             href="/student"
             className="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
-            Student
+            Student home
           </Link>
           <Link
             href="/doctor"
             className="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
-            Doctor
+            Doctor home
           </Link>
         </nav>
         <div className="flex items-center gap-2">

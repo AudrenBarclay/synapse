@@ -16,6 +16,7 @@ export function MessageThread({
   otherAvatar: string | null;
   messages: Message[];
 }) {
+  const otherLabel = otherName.trim() || "Name not set";
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-slate-200/70 bg-white px-4 py-3">
@@ -23,7 +24,7 @@ export function MessageThread({
           <Avatar name={otherName} src={otherAvatar} />
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-slate-900">
-              {otherName}
+              {otherLabel}
             </div>
             <div className="text-xs text-slate-500">
               Keep messages professional and concise.
@@ -50,7 +51,7 @@ export function MessageThread({
                   )}
                 >
                   <div className={cn("text-xs", isMe ? "text-white/80" : "text-slate-500")}>
-                    {isMe ? meName : otherName} ·{" "}
+                    {isMe ? meName : otherLabel} ·{" "}
                     {new Date(m.sentAtIso).toLocaleTimeString(undefined, {
                       hour: "numeric",
                       minute: "2-digit"

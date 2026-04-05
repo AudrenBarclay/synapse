@@ -1,38 +1,54 @@
 # Synapse
 
-A clean, production-style **pre-med networking** web app (LinkedIn-like) focused on connecting pre-med students with doctors for shadowing opportunities.
+Pre-med networking web app (LinkedIn-style) for students and physicians: profiles, shadowing discovery, mutual-match messaging, forms, and weekly availability—backed by **Supabase** (profiles, listings, and messages read from your project database).
 
 ## Tech
 
-- Next.js (App Router) + React
-- TypeScript
+- Next.js (App Router) + React + TypeScript
 - Tailwind CSS
-- Mock data only (no backend yet)
+- Supabase Auth, Postgres, and Storage (`avatars`, `student-forms`)
 
 ## Getting started
 
-1. Install **Node.js LTS** (includes `npm`). Check with `node -v` and `npm -v`.
-2. In Terminal, go into **this** project folder (not your whole Documents folder):
+1. Install **Node.js LTS**. In the project folder:
 
 ```bash
 cd /Users/audrenbarclay/Documents/premed-networking
+npm install
 ```
 
-3. Install dependencies and start the dev server:
+2. Create a **Supabase** project. In the SQL editor, run `supabase/schema.sql`, then apply migrations in order: `002_matching_schedule_prereqs.sql`, `003_opportunities.sql` (shadowing listings + RLS). The `opportunities` table powers student browse and doctor-created listings.
+
+3. Create Storage buckets **`avatars`** and **`student-forms`** with policies so authenticated users can upload under their own user id prefix.
+
+4. Copy environment variables:
 
 ```bash
-npm install
+cp .env.example .env.local
+```
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from Supabase → Project Settings → API.
+
+5. Run the app:
+
+```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000). Sign up as a student or doctor—dashboards and lists stay **empty** until real rows exist in your database.
 
-**If the page does not load:** the dev server is not running, or it failed to start. Read the Terminal output after `npm run dev`—fix any errors, or try another port: `npm run dev -- -p 3001` then open `http://localhost:3001`.
+## Deploy (Vercel)
+
+1. Push the repo to GitHub/GitLab and import it in [Vercel](https://vercel.com) as a Next.js project (default build: `next build`, output: Next).
+2. In **Vercel → Project → Settings → Environment Variables**, add for **Production** and **Preview**:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Deploy. Unauthenticated visitors can open the home page and public profiles (`/doctors/[id]`, `/students/[id]`). Dashboards, messages, and **Opportunities Near Me** require sign-in (enforced in middleware).
 
 ## Project structure
 
-- `src/app/` routes/pages
-- `src/components/` reusable UI components
-- `src/data/` mock data
-- `src/types/` TypeScript types
-- `src/utils/` small utilities
+- `src/app/` — routes and pages
+- `src/components/` — UI
+- `src/lib/` — Supabase clients, mappers, helpers
+- `supabase/` — SQL schema and migrations
+- `src/types/` — TypeScript types
