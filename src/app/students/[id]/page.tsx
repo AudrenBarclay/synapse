@@ -76,14 +76,8 @@ export default async function StudentProfilePage({
             <div className="flex flex-wrap gap-2">
               {student.year ? <Badge variant="brand">{student.year}</Badge> : null}
               {student.major.trim() ? <Badge variant="slate">{student.major}</Badge> : null}
-              {[student.location.neighborhood, student.location.city, student.location.state].some(
-                Boolean
-              ) ? (
-                <Badge variant="slate">
-                  {[student.location.neighborhood, student.location.city, student.location.state]
-                    .filter(Boolean)
-                    .join(", ")}
-                </Badge>
+              {student.location.text.trim() ? (
+                <Badge variant="slate">{student.location.text}</Badge>
               ) : null}
             </div>
 

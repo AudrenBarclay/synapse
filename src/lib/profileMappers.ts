@@ -1,5 +1,6 @@
 import type { AvailabilityStatus, Coordinates } from "@/types/core";
 import type { DoctorProfile, MeetingSlot, StudentProfile, StudentYear } from "@/types";
+import { coerceLocationText, coerceStringArray } from "@/lib/tags";
 
 export const STUDENT_YEAR_OPTIONS = [
   "Freshman",
@@ -9,9 +10,11 @@ export const STUDENT_YEAR_OPTIONS = [
   "Post‑bacc"
 ] as const;
 
-function parseYear(y: string | null | undefined): StudentProfile["year"] {
-  const found = STUDENT_YEAR_OPTIONS.find((v) => v === y);
-  return found ?? "Junior";
+function parseYear(y: string | null | undefined): StudentYear | null {
+  if (y == null || !String(y).trim()) return null;
+  const ys = String(y).trim();
+  const found = STUDENT_YEAR_OPTIONS.find((v) => v === ys);
+  return (found as StudentYear | undefined) ?? null;
 }
 
 function parseAvailability(s: string | null | undefined): AvailabilityStatus {
@@ -37,9 +40,7 @@ export type ProfileRow = {
   avatar_url: string | null;
   headline: string | null;
   bio: string | null;
-  city: string | null;
-  state: string | null;
-  neighborhood: string | null;
+  location: string | null;
   lat: number | null;
   lng: number | null;
   specialty: string | null;
@@ -92,16 +93,14 @@ export function rowToDoctorProfile(
     headline: row.headline?.trim() || "",
     bio: row.bio?.trim() || "",
     location: {
-      city: row.city?.trim() || "",
-      state: row.state?.trim() || "",
-      neighborhood: row.neighborhood?.trim() || undefined,
+      text: coerceLocationText(row.location),
       coordinates: c
     },
     availableForShadowing: row.open_to_shadowing ?? false,
     availabilityStatus: parseAvailability(row.availability_status),
     meetingSlots,
-    interests: row.doctor_interests ?? [],
-    areasOfFocus: row.areas_of_focus ?? [],
+    interests: coerceStringArray(row.doctor_interests),
+    areasOfFocus: coerceStringArray(row.areas_of_focus),
     dressCodePreferences: row.dress_code_preferences?.trim() ?? "",
     meetingPointPreferences: row.meeting_point_preferences?.trim() ?? "",
     preShadowingReadings: row.pre_shadowing_readings?.trim() ?? ""
@@ -139,13 +138,11 @@ export function rowsToStudentProfile(
     previousShadowingExperience: hours?.previous_shadowing_experience?.trim() || "",
     bio: profile.bio?.trim() || "",
     location: {
-      city: profile.city?.trim() || "",
-      state: profile.state?.trim() || "",
-      neighborhood: profile.neighborhood?.trim() || undefined,
+      text: coerceLocationText(profile.location),
       coordinates: c
     },
-    interests: hours?.interests ?? [],
-    skills: hours?.skills ?? [],
-    savedDoctors: hours?.saved_doctor_ids ?? []
+    interests: coerceStringArray(hours?.interests),
+    skills: coerceStringArray(hours?.skills),
+    savedDoctors: coerceStringArray(hours?.saved_doctor_ids)
   };
 }

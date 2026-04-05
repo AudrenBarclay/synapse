@@ -17,9 +17,7 @@ create table if not exists public.profiles (
   avatar_url text,
   headline text default '' not null,
   bio text default '' not null,
-  city text default '' not null,
-  state text default '' not null,
-  neighborhood text,
+  location text default '' not null,
   lat double precision,
   lng double precision,
   -- Doctor-only (nullable for students)

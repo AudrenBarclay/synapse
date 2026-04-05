@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { StudentProfileEditForm } from "@/components/profile/StudentProfileEditForm";
 import { Button } from "@/components/ui/Button";
-import type { ProfileRow, StudentHoursRow } from "@/lib/profileMappers";
+import {
+  normalizeProfileRowForForm,
+  normalizeStudentHoursRowForForm
+} from "@/lib/profileFormNormalize";
 
 export default async function StudentEditProfilePage() {
   const supabase = await createServerSupabaseClient();
@@ -37,6 +40,15 @@ export default async function StudentEditProfilePage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const safeProfile = normalizeProfileRowForForm(
+    profile as Record<string, unknown>,
+    user.id
+  );
+  const safeHours = normalizeStudentHoursRowForForm(
+    hours as Record<string, unknown> | null,
+    user.id
+  );
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -52,8 +64,8 @@ export default async function StudentEditProfilePage() {
       </div>
 
       <StudentProfileEditForm
-        initialProfile={profile as ProfileRow}
-        initialHours={hours as StudentHoursRow | null}
+        initialProfile={safeProfile}
+        initialHours={safeHours}
         userId={user.id}
       />
     </main>

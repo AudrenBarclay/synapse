@@ -134,14 +134,8 @@ export default async function DoctorProfilePage({
               ) : (
                 <Badge variant="slate">Shadowing paused</Badge>
               )}
-              {[doctor.location.neighborhood, doctor.location.city, doctor.location.state].some(
-                Boolean
-              ) ? (
-                <Badge variant="slate">
-                  {[doctor.location.neighborhood, doctor.location.city, doctor.location.state]
-                    .filter(Boolean)
-                    .join(", ")}
-                </Badge>
+              {doctor.location.text.trim() ? (
+                <Badge variant="slate">{doctor.location.text}</Badge>
               ) : (
                 <Badge variant="slate">Location not set</Badge>
               )}

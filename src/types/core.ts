@@ -10,9 +10,8 @@ export type Coordinates = {
 };
 
 export type Location = {
-  city: string;
-  state: string;
-  neighborhood?: string;
+  /** Maps to `profiles.location` in Supabase (freeform: city, region, campus, etc.). */
+  text: string;
   /** Set when the user has saved latitude/longitude on their profile. */
   coordinates: Coordinates | null;
 };

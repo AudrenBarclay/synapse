@@ -1,4 +1,5 @@
 import { haversineMiles } from "@/lib/geo";
+import { coerceLocationText } from "@/lib/tags";
 import type { Coordinates } from "@/types/core";
 import type { Opportunity } from "@/types";
 
@@ -12,9 +13,7 @@ export const OPPORTUNITY_LIST_SELECT = `
   profiles (
     full_name,
     specialty,
-    city,
-    state,
-    neighborhood,
+    location,
     lat,
     lng,
     open_to_shadowing,
@@ -26,9 +25,7 @@ export const OPPORTUNITY_LIST_SELECT = `
 export type OpportunityDoctorEmbed = {
   full_name: string | null;
   specialty: string | null;
-  city: string | null;
-  state: string | null;
-  neighborhood: string | null;
+  location: string | null;
   lat: number | null;
   lng: number | null;
   open_to_shadowing: boolean | null;
@@ -70,8 +67,7 @@ export function opportunityJoinToView(
     );
   }
 
-  const locationLabel =
-    [p.neighborhood, p.city, p.state].filter(Boolean).join(", ") || "";
+  const locationLabel = coerceLocationText(p.location).trim();
 
   const doctorOpen = p.open_to_shadowing ?? false;
   const notAvail = p.availability_status === "not_available";

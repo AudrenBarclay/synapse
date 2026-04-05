@@ -23,7 +23,7 @@ export default async function OpportunitiesNearMePage() {
 
   const { data: prof } = await supabase
     .from("profiles")
-    .select("city,state,neighborhood,lat,lng")
+    .select("location,lat,lng")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,7 +31,7 @@ export default async function OpportunitiesNearMePage() {
     profileLat = prof.lat ?? null;
     profileLng = prof.lng ?? null;
     profileLocationLabel =
-      [prof.neighborhood, prof.city, prof.state].filter(Boolean).join(", ") || "Not set";
+      prof.location?.trim() || "Not set";
   }
 
   const { data: oppRows, error } = await supabase

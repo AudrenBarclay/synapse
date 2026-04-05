@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DoctorProfileEditForm } from "@/components/profile/DoctorProfileEditForm";
 import { DoctorWeekScheduleSection } from "@/components/profile/DoctorWeekScheduleSection";
 import { Button } from "@/components/ui/Button";
-import type { ProfileRow } from "@/lib/profileMappers";
+import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
 
 export default async function DoctorEditProfilePage() {
   const supabase = await createServerSupabaseClient();
@@ -32,6 +32,11 @@ export default async function DoctorEditProfilePage() {
     redirect("/auth");
   }
 
+  const safeProfile = normalizeProfileRowForForm(
+    profile as Record<string, unknown>,
+    user.id
+  );
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -46,7 +51,7 @@ export default async function DoctorEditProfilePage() {
         </Link>
       </div>
 
-      <DoctorProfileEditForm initialProfile={profile as ProfileRow} userId={user.id} />
+      <DoctorProfileEditForm initialProfile={safeProfile} userId={user.id} />
 
       <div className="mt-12">
         <DoctorWeekScheduleSection doctorId={user.id} />

@@ -4,7 +4,11 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { uploadProfileAvatar } from "@/lib/uploadAvatar";
-import { joinTagList, parseTagList } from "@/lib/tags";
+import {
+  formatCoordForInput,
+  joinTagListFromUnknown,
+  parseTagList
+} from "@/lib/tags";
 import type { ProfileRow } from "@/lib/profileMappers";
 import type { AvailabilityStatus } from "@/types/core";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -35,23 +39,17 @@ export function DoctorProfileEditForm({
   userId: string;
 }) {
   const router = useRouter();
-  const [fullName, setFullName] = React.useState(initialProfile.full_name ?? "");
-  const [headline, setHeadline] = React.useState(initialProfile.headline ?? "");
-  const [bio, setBio] = React.useState(initialProfile.bio ?? "");
-  const [city, setCity] = React.useState(initialProfile.city ?? "");
-  const [stateUS, setStateUS] = React.useState(initialProfile.state ?? "");
-  const [neighborhood, setNeighborhood] = React.useState(
-    initialProfile.neighborhood ?? ""
-  );
-  const [latStr, setLatStr] = React.useState(
-    initialProfile.lat != null ? String(initialProfile.lat) : ""
-  );
-  const [lngStr, setLngStr] = React.useState(
-    initialProfile.lng != null ? String(initialProfile.lng) : ""
-  );
+  const [fullName, setFullName] = React.useState(String(initialProfile.full_name ?? ""));
+  const [headline, setHeadline] = React.useState(String(initialProfile.headline ?? ""));
+  const [bio, setBio] = React.useState(String(initialProfile.bio ?? ""));
+  const [locationText, setLocationText] = React.useState(String(initialProfile.location ?? ""));
+  const [latStr, setLatStr] = React.useState(formatCoordForInput(initialProfile.lat));
+  const [lngStr, setLngStr] = React.useState(formatCoordForInput(initialProfile.lng));
 
-  const [specialty, setSpecialty] = React.useState(initialProfile.specialty ?? "");
-  const [organization, setOrganization] = React.useState(initialProfile.organization ?? "");
+  const [specialty, setSpecialty] = React.useState(String(initialProfile.specialty ?? ""));
+  const [organization, setOrganization] = React.useState(
+    String(initialProfile.organization ?? "")
+  );
   const [openToShadowing, setOpenToShadowing] = React.useState(
     initialProfile.open_to_shadowing ?? false
   );
@@ -63,19 +61,19 @@ export function DoctorProfileEditForm({
       : "limited"
   );
   const [areasStr, setAreasStr] = React.useState(
-    joinTagList(initialProfile.areas_of_focus ?? [])
+    joinTagListFromUnknown(initialProfile.areas_of_focus)
   );
   const [interestsStr, setInterestsStr] = React.useState(
-    joinTagList(initialProfile.doctor_interests ?? [])
+    joinTagListFromUnknown(initialProfile.doctor_interests)
   );
   const [dressCode, setDressCode] = React.useState(
-    initialProfile.dress_code_preferences ?? ""
+    String(initialProfile.dress_code_preferences ?? "")
   );
   const [meetingPoint, setMeetingPoint] = React.useState(
-    initialProfile.meeting_point_preferences ?? ""
+    String(initialProfile.meeting_point_preferences ?? "")
   );
   const [preReadings, setPreReadings] = React.useState(
-    initialProfile.pre_shadowing_readings ?? ""
+    String(initialProfile.pre_shadowing_readings ?? "")
   );
 
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(
@@ -131,9 +129,7 @@ export function DoctorProfileEditForm({
         full_name: fullName.trim(),
         headline: headline.trim(),
         bio: bio.trim(),
-        city: city.trim(),
-        state: stateUS.trim(),
-        neighborhood: neighborhood.trim() || null,
+        location: locationText.trim(),
         lat,
         lng,
         specialty: specialty.trim() || null,
@@ -254,14 +250,12 @@ export function DoctorProfileEditForm({
             title="Location"
             subtitle="Helps students discover you on the map and by distance"
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} />
-            <Input label="State" value={stateUS} onChange={(e) => setStateUS(e.target.value)} />
-          </div>
-          <Input
-            label="Neighborhood (optional)"
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
+          <Textarea
+            label="Location"
+            hint="e.g. Atlanta, GA · Midtown or campus / hospital name"
+            rows={2}
+            value={locationText}
+            onChange={(e) => setLocationText(e.target.value)}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input

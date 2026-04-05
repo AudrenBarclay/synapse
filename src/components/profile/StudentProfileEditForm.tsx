@@ -4,7 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { uploadProfileAvatar } from "@/lib/uploadAvatar";
-import { joinTagList, parseTagList } from "@/lib/tags";
+import {
+  coerceStringArray,
+  formatCoordForInput,
+  joinTagListFromUnknown,
+  parseTagList
+} from "@/lib/tags";
 import type { ProfileRow, StudentHoursRow } from "@/lib/profileMappers";
 import { STUDENT_YEAR_OPTIONS } from "@/lib/profileMappers";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -37,20 +42,12 @@ export function StudentProfileEditForm({
   userId: string;
 }) {
   const router = useRouter();
-  const [fullName, setFullName] = React.useState(initialProfile.full_name ?? "");
-  const [headline, setHeadline] = React.useState(initialProfile.headline ?? "");
-  const [bio, setBio] = React.useState(initialProfile.bio ?? "");
-  const [city, setCity] = React.useState(initialProfile.city ?? "");
-  const [stateUS, setStateUS] = React.useState(initialProfile.state ?? "");
-  const [neighborhood, setNeighborhood] = React.useState(
-    initialProfile.neighborhood ?? ""
-  );
-  const [latStr, setLatStr] = React.useState(
-    initialProfile.lat != null ? String(initialProfile.lat) : ""
-  );
-  const [lngStr, setLngStr] = React.useState(
-    initialProfile.lng != null ? String(initialProfile.lng) : ""
-  );
+  const [fullName, setFullName] = React.useState(String(initialProfile.full_name ?? ""));
+  const [headline, setHeadline] = React.useState(String(initialProfile.headline ?? ""));
+  const [bio, setBio] = React.useState(String(initialProfile.bio ?? ""));
+  const [locationText, setLocationText] = React.useState(String(initialProfile.location ?? ""));
+  const [latStr, setLatStr] = React.useState(formatCoordForInput(initialProfile.lat));
+  const [lngStr, setLngStr] = React.useState(formatCoordForInput(initialProfile.lng));
 
   const [shadowingHours, setShadowingHours] = React.useState(
     String(initialHours?.shadowing_hours ?? 0)
@@ -62,25 +59,30 @@ export function StudentProfileEditForm({
     String(initialHours?.volunteer_hours ?? 0)
   );
   const [year, setYear] = React.useState(() => {
-    const y = initialHours?.year ?? "";
+    const y =
+      initialHours?.year != null && initialHours.year !== ""
+        ? String(initialHours.year)
+        : "";
     return (STUDENT_YEAR_OPTIONS as readonly string[]).includes(y) ? y : "";
   });
-  const [major, setMajor] = React.useState(initialHours?.major ?? "");
+  const [major, setMajor] = React.useState(String(initialHours?.major ?? ""));
   const [medicalInterest, setMedicalInterest] = React.useState(
-    initialHours?.medical_interest ?? ""
+    String(initialHours?.medical_interest ?? "")
   );
   const [researchExperience, setResearchExperience] = React.useState(
-    initialHours?.research_experience ?? ""
+    String(initialHours?.research_experience ?? "")
   );
   const [interestsStr, setInterestsStr] = React.useState(
-    joinTagList(initialHours?.interests ?? [])
+    joinTagListFromUnknown(initialHours?.interests)
   );
-  const [skillsStr, setSkillsStr] = React.useState(joinTagList(initialHours?.skills ?? []));
+  const [skillsStr, setSkillsStr] = React.useState(
+    joinTagListFromUnknown(initialHours?.skills)
+  );
   const [shadowingGoals, setShadowingGoals] = React.useState(
-    initialHours?.shadowing_goals ?? ""
+    String(initialHours?.shadowing_goals ?? "")
   );
   const [previousShadowing, setPreviousShadowing] = React.useState(
-    initialHours?.previous_shadowing_experience ?? ""
+    String(initialHours?.previous_shadowing_experience ?? "")
   );
 
   const goalsWordCount = countWords(shadowingGoals);
@@ -144,9 +146,7 @@ export function StudentProfileEditForm({
         full_name: fullName.trim(),
         headline: headline.trim(),
         bio: bio.trim(),
-        city: city.trim(),
-        state: stateUS.trim(),
-        neighborhood: neighborhood.trim() || null,
+        location: locationText.trim(),
         lat,
         lng,
         updated_at: new Date().toISOString()
@@ -178,7 +178,7 @@ export function StudentProfileEditForm({
         skills: parseTagList(skillsStr),
         shadowing_goals: shadowingGoals.trim(),
         previous_shadowing_experience: previousShadowing.trim(),
-        saved_doctor_ids: initialHours?.saved_doctor_ids ?? [],
+        saved_doctor_ids: coerceStringArray(initialHours?.saved_doctor_ids),
         updated_at: new Date().toISOString()
       };
 
@@ -241,14 +241,12 @@ export function StudentProfileEditForm({
             title="Location"
             subtitle="Used for “opportunities near me” and distance on the map"
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} />
-            <Input label="State" value={stateUS} onChange={(e) => setStateUS(e.target.value)} />
-          </div>
-          <Input
-            label="Neighborhood (optional)"
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
+          <Textarea
+            label="Location"
+            hint="e.g. City, state or campus — shown on your profile"
+            rows={2}
+            value={locationText}
+            onChange={(e) => setLocationText(e.target.value)}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
