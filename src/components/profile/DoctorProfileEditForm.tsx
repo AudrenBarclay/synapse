@@ -7,12 +7,18 @@ import { uploadProfileAvatar } from "@/lib/uploadAvatar";
 import { joinTagListFromUnknown, parseTagList } from "@/lib/tags";
 import type { ProfileRow } from "@/lib/profileMappers";
 import type { AvailabilityStatus } from "@/types/core";
+import {
+  persistDoctorWeekSchedule,
+  type WeekHalfSlotDraft,
+  type WeekScheduleItemDraft
+} from "@/lib/doctorWeekSchedule";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ProfilePictureUpload } from "@/components/profile/ProfilePictureUpload";
+import { DoctorWeekScheduleSection } from "@/components/profile/DoctorWeekScheduleSection";
 
 const AV_OPTIONS: { value: AvailabilityStatus; label: string }[] = [
   { value: "available", label: "Available" },
@@ -22,10 +28,14 @@ const AV_OPTIONS: { value: AvailabilityStatus; label: string }[] = [
 
 export function DoctorProfileEditForm({
   initialProfile,
-  userId
+  userId,
+  initialWeekSlots,
+  initialWeekItems
 }: {
   initialProfile: ProfileRow;
   userId: string;
+  initialWeekSlots: WeekHalfSlotDraft[];
+  initialWeekItems: WeekScheduleItemDraft[];
 }) {
   const router = useRouter();
   const [fullName, setFullName] = React.useState(String(initialProfile.full_name ?? ""));
@@ -71,6 +81,9 @@ export function DoctorProfileEditForm({
 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const [weekSlots, setWeekSlots] = React.useState<WeekHalfSlotDraft[]>(initialWeekSlots);
+  const [weekItems, setWeekItems] = React.useState<WeekScheduleItemDraft[]>(initialWeekItems);
 
   const displayName = fullName.trim();
 
@@ -266,6 +279,13 @@ export function DoctorProfileEditForm({
           />
         </CardContent>
       </Card>
+
+      <DoctorWeekScheduleSection
+        slots={weekSlots}
+        items={weekItems}
+        onSlotsChange={setWeekSlots}
+        onItemsChange={setWeekItems}
+      />
 
       {error ? (
         <p className="text-sm text-rose-600" role="alert">

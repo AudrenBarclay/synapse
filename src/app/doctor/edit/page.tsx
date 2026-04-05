@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { randomUUID } from "crypto";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DoctorProfileEditForm } from "@/components/profile/DoctorProfileEditForm";
-import { DoctorWeekScheduleSection } from "@/components/profile/DoctorWeekScheduleSection";
 import { Button } from "@/components/ui/Button";
 import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
+import {
+  normalizeWeekHalfSlots,
+  normalizeWeekScheduleItems
+} from "@/lib/doctorWeekSchedule";
 
 export default async function DoctorEditProfilePage() {
   const supabase = await createServerSupabaseClient();
@@ -32,10 +36,21 @@ export default async function DoctorEditProfilePage() {
     redirect("/auth");
   }
 
+  const [{ data: slotRows }, { data: itemRows }] = await Promise.all([
+    supabase.from("doctor_week_half_slots").select("*").eq("doctor_id", user.id),
+    supabase
+      .from("doctor_schedule_items")
+      .select("*")
+      .eq("doctor_id", user.id)
+      .order("sort_order", { ascending: true })
+  ]);
+
   const safeProfile = normalizeProfileRowForForm(
     profile as Record<string, unknown>,
     user.id
   );
+  const initialWeekSlots = normalizeWeekHalfSlots(slotRows ?? null);
+  const initialWeekItems = normalizeWeekScheduleItems(itemRows ?? null, () => randomUUID());
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -51,11 +66,12 @@ export default async function DoctorEditProfilePage() {
         </Link>
       </div>
 
-      <DoctorProfileEditForm initialProfile={safeProfile} userId={user.id} />
-
-      <div className="mt-12">
-        <DoctorWeekScheduleSection doctorId={user.id} />
-      </div>
+      <DoctorProfileEditForm
+        initialProfile={safeProfile}
+        userId={user.id}
+        initialWeekSlots={initialWeekSlots}
+        initialWeekItems={initialWeekItems}
+      />
     </main>
   );
 }
