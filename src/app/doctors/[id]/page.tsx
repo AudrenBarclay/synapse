@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { randomUUID } from "crypto";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -22,11 +23,11 @@ import {
   type OpportunityWithDoctorRow
 } from "@/lib/opportunities";
 import { DoctorProfileMatchPanel } from "@/components/matching/DoctorProfileMatchPanel";
+import { DoctorWeekViewReadOnly } from "@/components/profile/DoctorWeekViewReadOnly";
 import {
-  DoctorWeekViewReadOnly,
-  type WeekHalfSlotRow,
-  type ScheduleItemRow
-} from "@/components/profile/DoctorWeekViewReadOnly";
+  normalizeWeekHalfSlots,
+  normalizeWeekScheduleItems
+} from "@/lib/doctorWeekSchedule";
 
 export default async function DoctorProfilePage({
   params
@@ -65,8 +66,12 @@ export default async function DoctorProfilePage({
     .eq("doctor_id", id)
     .order("sort_order", { ascending: true });
 
-  const meetingSlots = rowsToMeetingSlots((slotRows as MeetingSlotRow[]) ?? []);
+  const meetingSlots = rowsToMeetingSlots(
+    Array.isArray(slotRows) ? (slotRows as MeetingSlotRow[]) : []
+  );
   const doctor = rowToDoctorProfile(profile, meetingSlots);
+  const weekSlotsNormalized = normalizeWeekHalfSlots(weekSlots ?? null);
+  const weekItemsNormalized = normalizeWeekScheduleItems(weekItems ?? null, () => randomUUID());
   const av = formatAvailability(doctor.availabilityStatus);
   const doctorDisplayName = profile.full_name?.trim() ?? "";
 
@@ -208,10 +213,7 @@ export default async function DoctorProfilePage({
             </Card>
           ) : null}
 
-          <DoctorWeekViewReadOnly
-            slots={(weekSlots as WeekHalfSlotRow[]) ?? []}
-            items={(weekItems as ScheduleItemRow[]) ?? []}
-          />
+          <DoctorWeekViewReadOnly slots={weekSlotsNormalized} items={weekItemsNormalized} />
 
           <Card>
             <CardContent className="space-y-3">
