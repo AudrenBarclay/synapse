@@ -134,6 +134,19 @@ export function DoctorProfileEditForm({
         return;
       }
 
+      const { error: weekErr } = await persistDoctorWeekSchedule(
+        supabase,
+        userId,
+        weekSlots,
+        weekItems
+      );
+      if (weekErr) {
+        setError(
+          `Your profile was saved, but the weekly schedule could not be saved: ${weekErr}`
+        );
+        return;
+      }
+
       router.push("/doctor");
       router.refresh();
     } finally {
