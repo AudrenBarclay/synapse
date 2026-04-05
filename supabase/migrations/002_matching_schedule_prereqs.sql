@@ -58,35 +58,6 @@ create table if not exists public.student_documents (
 
 create index if not exists student_documents_student_idx on public.student_documents (student_id);
 
--- ---------------------------------------------------------------------------
--- Doctor week grid: AM/PM half-days (0 = Sunday … 6 = Saturday)
--- ---------------------------------------------------------------------------
-create table if not exists public.doctor_week_half_slots (
-  doctor_id uuid not null references public.profiles (id) on delete cascade,
-  day_of_week smallint not null check (
-    day_of_week >= 0
-    and day_of_week <= 6
-  ),
-  half_day text not null check (half_day in ('am', 'pm')),
-  is_available boolean default false not null,
-  primary key (doctor_id, day_of_week, half_day)
-);
-
--- Optional labeled items (procedure, clinic block, etc.) per cell
-create table if not exists public.doctor_schedule_items (
-  id uuid primary key default gen_random_uuid (),
-  doctor_id uuid not null references public.profiles (id) on delete cascade,
-  day_of_week smallint not null check (
-    day_of_week >= 0
-    and day_of_week <= 6
-  ),
-  half_day text not null check (half_day in ('am', 'pm')),
-  title text not null,
-  details text default '' not null,
-  sort_order integer default 0 not null,
-  created_at timestamptz default now() not null
-);
-
-create index if not exists doctor_schedule_items_lookup on public.doctor_schedule_items (doctor_id, day_of_week, half_day);
+-- Doctor weekly AM/PM schedule: stored in profiles.availability_schedule (jsonb). See migration 006.
 
 -- Storage: create bucket `student-forms` (policies in dashboard — users upload own folder).

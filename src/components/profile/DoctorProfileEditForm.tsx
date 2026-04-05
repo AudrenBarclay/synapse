@@ -8,7 +8,7 @@ import { joinTagListFromUnknown, parseTagList } from "@/lib/tags";
 import type { ProfileRow } from "@/lib/profileMappers";
 import type { AvailabilityStatus } from "@/types/core";
 import {
-  persistDoctorWeekSchedule,
+  serializeAvailabilitySchedule,
   type WeekHalfSlotDraft,
   type WeekScheduleItemDraft
 } from "@/lib/doctorWeekSchedule";
@@ -118,6 +118,7 @@ export function DoctorProfileEditForm({
         dress_code_preferences: dressCode.trim(),
         meeting_point_preferences: meetingPoint.trim(),
         pre_shadowing_readings: preReadings.trim(),
+        availability_schedule: serializeAvailabilitySchedule(weekSlots, weekItems),
         updated_at: new Date().toISOString()
       };
       if (avatarUrl !== undefined) {
@@ -131,19 +132,6 @@ export function DoctorProfileEditForm({
 
       if (pErr) {
         setError(pErr.message);
-        return;
-      }
-
-      const { error: weekErr } = await persistDoctorWeekSchedule(
-        supabase,
-        userId,
-        weekSlots,
-        weekItems
-      );
-      if (weekErr) {
-        setError(
-          `Your profile was saved, but the weekly schedule could not be saved: ${weekErr}`
-        );
         return;
       }
 

@@ -24,10 +24,7 @@ import {
 } from "@/lib/opportunities";
 import { DoctorProfileMatchPanel } from "@/components/matching/DoctorProfileMatchPanel";
 import { DoctorWeekViewReadOnly } from "@/components/profile/DoctorWeekViewReadOnly";
-import {
-  normalizeWeekHalfSlots,
-  normalizeWeekScheduleItems
-} from "@/lib/doctorWeekSchedule";
+import { parseAvailabilitySchedule } from "@/lib/doctorWeekSchedule";
 
 export default async function DoctorProfilePage({
   params
@@ -55,23 +52,16 @@ export default async function DoctorProfilePage({
     .eq("doctor_id", id)
     .order("start_at", { ascending: true });
 
-  const { data: weekSlots } = await supabase
-    .from("doctor_week_half_slots")
-    .select("day_of_week, half_day, is_available")
-    .eq("doctor_id", id);
-
-  const { data: weekItems } = await supabase
-    .from("doctor_schedule_items")
-    .select("id, day_of_week, half_day, title, details")
-    .eq("doctor_id", id)
-    .order("sort_order", { ascending: true });
-
   const meetingSlots = rowsToMeetingSlots(
     Array.isArray(slotRows) ? (slotRows as MeetingSlotRow[]) : []
   );
   const doctor = rowToDoctorProfile(profile, meetingSlots);
-  const weekSlotsNormalized = normalizeWeekHalfSlots(weekSlots ?? null);
-  const weekItemsNormalized = normalizeWeekScheduleItems(weekItems ?? null, () => randomUUID());
+  const weekSchedule = parseAvailabilitySchedule(
+    (profileRow as Record<string, unknown>).availability_schedule,
+    () => randomUUID()
+  );
+  const weekSlotsNormalized = weekSchedule.slots;
+  const weekItemsNormalized = weekSchedule.items;
   const av = formatAvailability(doctor.availabilityStatus);
   const doctorDisplayName = profile.full_name?.trim() ?? "";
 

@@ -33,6 +33,7 @@ create table if not exists public.profiles (
   dress_code_preferences text default '' not null,
   meeting_point_preferences text default '' not null,
   pre_shadowing_readings text default '' not null,
+  availability_schedule jsonb default '{}'::jsonb,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
@@ -162,35 +163,7 @@ create table if not exists public.student_documents (
 
 create index if not exists student_documents_student_idx on public.student_documents (student_id);
 
--- ---------------------------------------------------------------------------
--- Doctor weekly AM/PM availability + optional labeled items per cell
--- ---------------------------------------------------------------------------
-create table if not exists public.doctor_week_half_slots (
-  doctor_id uuid not null references public.profiles (id) on delete cascade,
-  day_of_week smallint not null check (
-    day_of_week >= 0
-    and day_of_week <= 6
-  ),
-  half_day text not null check (half_day in ('am', 'pm')),
-  is_available boolean default false not null,
-  primary key (doctor_id, day_of_week, half_day)
-);
-
-create table if not exists public.doctor_schedule_items (
-  id uuid primary key default gen_random_uuid (),
-  doctor_id uuid not null references public.profiles (id) on delete cascade,
-  day_of_week smallint not null check (
-    day_of_week >= 0
-    and day_of_week <= 6
-  ),
-  half_day text not null check (half_day in ('am', 'pm')),
-  title text not null,
-  details text default '' not null,
-  sort_order integer default 0 not null,
-  created_at timestamptz default now() not null
-);
-
-create index if not exists doctor_schedule_items_lookup on public.doctor_schedule_items (doctor_id, day_of_week, half_day);
+-- Doctor weekly schedule: profiles.availability_schedule (jsonb, { slots, items }).
 
 -- ---------------------------------------------------------------------------
 -- opportunities: shadowing listings created by doctors (students browse).
@@ -232,4 +205,4 @@ where
 -- - bookings: SELECT where student_id or doctor_id = auth.uid(); INSERT as student for open slots.
 -- - matches: SELECT if student_id or doctor_id = auth.uid(); INSERT as student (request); UPDATE doctor_accepted_at as doctor.
 -- - student_documents: SELECT/INSERT/UPDATE own student_id only.
--- - doctor_week_half_slots / doctor_schedule_items: SELECT public read; INSERT/UPDATE where doctor_id = auth.uid().
+-- - profiles.availability_schedule: updated with profile row (doctors).

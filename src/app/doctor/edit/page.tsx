@@ -5,10 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DoctorProfileEditForm } from "@/components/profile/DoctorProfileEditForm";
 import { Button } from "@/components/ui/Button";
 import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
-import {
-  normalizeWeekHalfSlots,
-  normalizeWeekScheduleItems
-} from "@/lib/doctorWeekSchedule";
+import { parseAvailabilitySchedule } from "@/lib/doctorWeekSchedule";
 
 export default async function DoctorEditProfilePage() {
   const supabase = await createServerSupabaseClient();
@@ -36,21 +33,9 @@ export default async function DoctorEditProfilePage() {
     redirect("/auth");
   }
 
-  const [{ data: slotRows }, { data: itemRows }] = await Promise.all([
-    supabase.from("doctor_week_half_slots").select("*").eq("doctor_id", user.id),
-    supabase
-      .from("doctor_schedule_items")
-      .select("*")
-      .eq("doctor_id", user.id)
-      .order("sort_order", { ascending: true })
-  ]);
-
-  const safeProfile = normalizeProfileRowForForm(
-    profile as Record<string, unknown>,
-    user.id
-  );
-  const initialWeekSlots = normalizeWeekHalfSlots(slotRows ?? null);
-  const initialWeekItems = normalizeWeekScheduleItems(itemRows ?? null, () => randomUUID());
+  const rawProfile = profile as Record<string, unknown>;
+  const schedule = parseAvailabilitySchedule(rawProfile.availability_schedule, () => randomUUID());
+  const safeProfile = normalizeProfileRowForForm(rawProfile, user.id);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -69,8 +54,8 @@ export default async function DoctorEditProfilePage() {
       <DoctorProfileEditForm
         initialProfile={safeProfile}
         userId={user.id}
-        initialWeekSlots={initialWeekSlots}
-        initialWeekItems={initialWeekItems}
+        initialWeekSlots={schedule.slots}
+        initialWeekItems={schedule.items}
       />
     </main>
   );
