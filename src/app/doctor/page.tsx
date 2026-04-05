@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/Badge";
 import {
   rowToDoctorProfile,
   rowsToStudentProfile,
-  type ProfileRow,
   type StudentHoursRow
 } from "@/lib/profileMappers";
+import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
 import type { StudentProfile } from "@/types";
 import { formatAvailability } from "@/utils/format";
 import { PendingMatchesSection } from "@/components/matching/PendingMatchesSection";
@@ -60,9 +60,10 @@ export default async function DoctorDashboardPage() {
     .eq("doctor_id", user.id)
     .eq("is_active", true);
 
-  const me = rowToDoctorProfile(profileRow as ProfileRow, []);
+  const myProfile = normalizeProfileRowForForm(profileRow as Record<string, unknown>, user.id);
+  const me = rowToDoctorProfile(myProfile, []);
   const av = formatAvailability(me.availabilityStatus);
-  const doctorDisplayName = profileRow.full_name?.trim() ?? "";
+  const doctorDisplayName = myProfile.full_name?.trim() ?? "";
 
   const { data: studentRows } = await supabase
     .from("profiles")
@@ -79,7 +80,10 @@ export default async function DoctorDashboardPage() {
       .eq("user_id", row.id)
       .maybeSingle();
     studentsResolved.push(
-      rowsToStudentProfile(row as ProfileRow, h as StudentHoursRow | null)
+      rowsToStudentProfile(
+        normalizeProfileRowForForm(row as Record<string, unknown>, String(row.id)),
+        h as StudentHoursRow | null
+      )
     );
   }
 

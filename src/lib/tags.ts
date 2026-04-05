@@ -43,6 +43,23 @@ export function joinTagListFromUnknown(value: unknown): string {
   return joinTagList(coerceStringArray(value));
 }
 
+/** Merge several row keys into one deduped string list (arrays, comma-separated text, json). */
+export function mergeCoercedStringLists(
+  raw: Record<string, unknown>,
+  ...keys: string[]
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const k of keys) {
+    for (const item of coerceStringArray(raw[k])) {
+      if (seen.has(item)) continue;
+      seen.add(item);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
 /**
  * `profiles.location` should be text; JSON/object values are flattened safely for the form.
  */

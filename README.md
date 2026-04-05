@@ -17,7 +17,7 @@ cd /Users/audrenbarclay/Documents/premed-networking
 npm install
 ```
 
-2. Create a **Supabase** project. In the SQL editor, run `supabase/schema.sql`, then apply migrations in order: `002_matching_schedule_prereqs.sql`, `003_opportunities.sql`, `004_profiles_location.sql`. Profiles store a single **`location`** text field (not separate `city` / `state` / `neighborhood` columns).
+2. Create a **Supabase** project. In the SQL editor, run `supabase/schema.sql`, then apply migrations in order: `002_matching_schedule_prereqs.sql`, `003_opportunities.sql`, `004_profiles_location.sql`, `005_profiles_optional_columns.sql`. The app normalizes optional/alias profile columns (e.g. `hospital_name`, `photo_url`, `city`/`state`) in `normalizeProfileRowForForm`.
 
 3. Create Storage buckets **`avatars`** and **`student-forms`** with policies so authenticated users can upload under their own user id prefix.
 

@@ -6,7 +6,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { rowsToStudentProfile, type ProfileRow, type StudentHoursRow } from "@/lib/profileMappers";
+import { rowsToStudentProfile, type StudentHoursRow } from "@/lib/profileMappers";
+import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
 import { countWords } from "@/lib/words";
 import { StudentProfileDoctorPanel } from "@/components/matching/StudentProfileDoctorPanel";
 
@@ -34,11 +35,9 @@ export default async function StudentProfilePage({
     .eq("user_id", id)
     .maybeSingle();
 
-  const student = rowsToStudentProfile(
-    profileRow as ProfileRow,
-    hoursRow as StudentHoursRow | null
-  );
-  const displayName = profileRow.full_name?.trim() ?? "";
+  const profile = normalizeProfileRowForForm(profileRow as Record<string, unknown>, id);
+  const student = rowsToStudentProfile(profile, hoursRow as StudentHoursRow | null);
+  const displayName = profile.full_name?.trim() ?? "";
 
   const {
     data: { user }

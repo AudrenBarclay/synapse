@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/Button";
 import {
   rowToDoctorProfile,
   rowsToStudentProfile,
-  type ProfileRow,
   type StudentHoursRow
 } from "@/lib/profileMappers";
+import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
 import {
   mapOpportunityRows,
   OPPORTUNITY_LIST_SELECT,
@@ -52,8 +52,9 @@ export default async function StudentDashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const me = rowsToStudentProfile(profileRow as ProfileRow, hoursRow as StudentHoursRow | null);
-  const displayName = profileRow.full_name?.trim() ?? "";
+  const myProfile = normalizeProfileRowForForm(profileRow as Record<string, unknown>, user.id);
+  const me = rowsToStudentProfile(myProfile, hoursRow as StudentHoursRow | null);
+  const displayName = myProfile.full_name?.trim() ?? "";
 
   const { data: doctorRows } = await supabase
     .from("profiles")
@@ -61,12 +62,17 @@ export default async function StudentDashboardPage() {
     .eq("role", "doctor")
     .limit(12);
 
-  const viewerLat = profileRow.lat ?? null;
-  const viewerLng = profileRow.lng ?? null;
+  const viewerLat = myProfile.lat ?? null;
+  const viewerLng = myProfile.lng ?? null;
 
-  const suggestedDoctors = (doctorRows as ProfileRow[] | null)
+  const suggestedDoctors = doctorRows
     ?.slice(0, 6)
-    .map((r) => rowToDoctorProfile(r, []))
+    .map((r) =>
+      rowToDoctorProfile(
+        normalizeProfileRowForForm(r as Record<string, unknown>, String(r.id)),
+        []
+      )
+    )
     .slice(0, 3);
 
   const { data: oppRows } = await supabase

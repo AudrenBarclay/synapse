@@ -12,9 +12,9 @@ import { formatAvailability } from "@/utils/format";
 import {
   rowToDoctorProfile,
   rowsToMeetingSlots,
-  type MeetingSlotRow,
-  type ProfileRow
+  type MeetingSlotRow
 } from "@/lib/profileMappers";
+import { normalizeProfileRowForForm } from "@/lib/profileFormNormalize";
 import type { Opportunity } from "@/types";
 import {
   mapOpportunityRows,
@@ -46,6 +46,8 @@ export default async function DoctorProfilePage({
     notFound();
   }
 
+  const profile = normalizeProfileRowForForm(profileRow as Record<string, unknown>, id);
+
   const { data: slotRows } = await supabase
     .from("meeting_slots")
     .select("*")
@@ -64,9 +66,9 @@ export default async function DoctorProfilePage({
     .order("sort_order", { ascending: true });
 
   const meetingSlots = rowsToMeetingSlots((slotRows as MeetingSlotRow[]) ?? []);
-  const doctor = rowToDoctorProfile(profileRow as ProfileRow, meetingSlots);
+  const doctor = rowToDoctorProfile(profile, meetingSlots);
   const av = formatAvailability(doctor.availabilityStatus);
-  const doctorDisplayName = profileRow.full_name?.trim() ?? "";
+  const doctorDisplayName = profile.full_name?.trim() ?? "";
 
   const {
     data: { user }

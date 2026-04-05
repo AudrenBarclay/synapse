@@ -1,5 +1,10 @@
 import type { ProfileRow, StudentHoursRow } from "@/lib/profileMappers";
-import { coerceLocationText, coerceStringArray, formatCoordForInput } from "@/lib/tags";
+import {
+  coerceLocationText,
+  coerceStringArray,
+  formatCoordForInput,
+  mergeCoercedStringLists
+} from "@/lib/tags";
 
 function str(v: unknown): string {
   if (v == null) return "";
@@ -10,6 +15,18 @@ function strOrNull(v: unknown): string | null {
   if (v == null) return null;
   const s = typeof v === "string" ? v : String(v);
   return s;
+}
+
+/** First non-empty string among several column names (legacy / alias columns). */
+function firstNonEmptyStr(raw: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const k of keys) {
+    const v = raw[k];
+    if (v == null) continue;
+    const s = typeof v === "string" ? v : String(v);
+    const t = s.trim();
+    if (t) return t;
+  }
+  return null;
 }
 
 function intNonNeg(v: unknown, fallback = 0): number {
@@ -23,8 +40,41 @@ function boolOrNull(v: unknown): boolean | null {
   return null;
 }
 
+function shadowingOpen(raw: Record<string, unknown>): boolean | null {
+  const a = boolOrNull(raw.open_to_shadowing);
+  const b = boolOrNull(raw.shadowing_available);
+  if (a !== null) return a;
+  if (b !== null) return b;
+  return null;
+}
+
+function normalizedLocationLine(raw: Record<string, unknown>): string | null {
+  const primary = coerceLocationText(raw.location).trim();
+  if (primary) return primary;
+  const legacy = [raw.neighborhood, raw.city, raw.state]
+    .map((x) => (typeof x === "string" ? x.trim() : ""))
+    .filter(Boolean)
+    .join(", ");
+  return legacy.trim() || null;
+}
+
+function latNum(raw: Record<string, unknown>): number | null {
+  const s = formatCoordForInput(raw.lat);
+  if (s === "") return null;
+  const n = Number.parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function lngNum(raw: Record<string, unknown>): number | null {
+  const s = formatCoordForInput(raw.lng);
+  if (s === "") return null;
+  const n = Number.parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 /**
- * Sanitize a raw Supabase `profiles` row before passing to client edit forms.
+ * Maps a raw Supabase `profiles` row (including optional / alias columns from migration 005)
+ * into the canonical `ProfileRow` shape used by forms and mappers.
  */
 export function normalizeProfileRowForForm(
   raw: Record<string, unknown>,
@@ -36,34 +86,47 @@ export function normalizeProfileRowForForm(
     role,
     email: raw.email == null ? null : strOrNull(raw.email),
     full_name: raw.full_name == null ? null : strOrNull(raw.full_name),
-    avatar_url: raw.avatar_url == null ? null : strOrNull(raw.avatar_url),
+    avatar_url: firstNonEmptyStr(raw, "avatar_url", "photo_url"),
     headline: raw.headline == null ? null : strOrNull(raw.headline),
     bio: raw.bio == null ? null : strOrNull(raw.bio),
-    location: coerceLocationText(raw.location) || null,
-    lat: (() => {
-      const s = formatCoordForInput(raw.lat);
-      if (s === "") return null;
-      const n = Number.parseFloat(s);
-      return Number.isFinite(n) ? n : null;
-    })(),
-    lng: (() => {
-      const s = formatCoordForInput(raw.lng);
-      if (s === "") return null;
-      const n = Number.parseFloat(s);
-      return Number.isFinite(n) ? n : null;
-    })(),
+    location: normalizedLocationLine(raw),
+    lat: latNum(raw),
+    lng: lngNum(raw),
     specialty: raw.specialty == null ? null : strOrNull(raw.specialty),
-    organization: raw.organization == null ? null : strOrNull(raw.organization),
-    open_to_shadowing: boolOrNull(raw.open_to_shadowing),
+    organization: firstNonEmptyStr(
+      raw,
+      "organization",
+      "hospital_name",
+      "organization_name",
+      "hospital"
+    ),
+    open_to_shadowing: shadowingOpen(raw),
     availability_status: raw.availability_status == null ? null : strOrNull(raw.availability_status),
-    areas_of_focus: coerceStringArray(raw.areas_of_focus),
-    doctor_interests: coerceStringArray(raw.doctor_interests),
-    dress_code_preferences:
-      raw.dress_code_preferences == null ? null : strOrNull(raw.dress_code_preferences),
-    meeting_point_preferences:
-      raw.meeting_point_preferences == null ? null : strOrNull(raw.meeting_point_preferences),
-    pre_shadowing_readings:
-      raw.pre_shadowing_readings == null ? null : strOrNull(raw.pre_shadowing_readings)
+    areas_of_focus: mergeCoercedStringLists(
+      raw,
+      "areas_of_focus",
+      "focus_areas",
+      "mentoring_topics"
+    ),
+    doctor_interests: mergeCoercedStringLists(
+      raw,
+      "doctor_interests",
+      "interests",
+      "tags",
+      "skills"
+    ),
+    dress_code_preferences: firstNonEmptyStr(raw, "dress_code_preferences", "dress_preferences"),
+    meeting_point_preferences: firstNonEmptyStr(
+      raw,
+      "meeting_point_preferences",
+      "check_in_instructions",
+      "check_in_details"
+    ),
+    pre_shadowing_readings: firstNonEmptyStr(
+      raw,
+      "pre_shadowing_readings",
+      "pre_shadowing_readings_and_papers"
+    )
   };
 }
 
